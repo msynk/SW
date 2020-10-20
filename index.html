@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SW Tests</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="install" style="display: none;">New version is available. downloading...</div>
+    <div id="notification" style="display: none;">New version installed. Click to refresh!</div>
+    <div id="progress" style="display: none;"></div>
+    <div id="app">This is the APP!</div>
+
+
+    <script>
+        (function () {
+            if (!'serviceWorker' in navigator) return;
+            var bodyCtx = JSVs(), refreshing = false;
+
+            navigator.serviceWorker.register('sw.js').then(prepareRegistration);
+            navigator.serviceWorker.addEventListener('message', handleMessage);
+            navigator.serviceWorker.addEventListener('controllerchange', handleController);
+
+            function handleController(e) {
+                console.log('SW controller changed.', e);
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            }
+            function prepareRegistration(reg) {
+                bodyCtx.notification.onclick = function () { reg.waiting && reg.waiting.postMessage('skipwaiting'); }
+
+                reg.waiting && showNotification();
+
+                reg.addEventListener('updatefound', function (e) {
+                    console.log('SW update found', e);
+                    if (!reg.installing) return;
+                    reg.installing.addEventListener('statechange', function (e) {
+                        console.log('SW state chnaged', e);
+                        if (!reg.waiting) return;
+                        if (navigator.serviceWorker.controller) {
+                            showNotification();
+                        } else {
+                            console.log('SW initialized!');
+                        }
+                    });
+                });
+                function showNotification() {
+                    bodyCtx.notification.style.display = 'block';
+                    bodyCtx.app.style.display = 'none';
+                }
+            }
+            function handleMessage(e) {
+                var message = e.data, type = message.type, data = message.data;
+
+                console.log(type, data);
+
+                if (type == 'installing') {
+                    bodyCtx.install.style.display = 'block';
+                    bodyCtx.notification.style.display = 'none';
+                    bodyCtx.app.style.display = 'none';
+                    bodyCtx.progress.style.display = 'block';
+                    bodyCtx.progress.textContent = 0 + '%';
+                }
+
+                if (type == 'progress') {
+                    bodyCtx.progress.textContent = data[1] + '%';
+                }
+
+                if (type == 'installed') {
+                    bodyCtx.install.style.display = 'none';
+                    //bodyCtx.progress.style.display = 'none';
+                }
+
+                if (type == 'activate') {
+                }
+            }
+            function JSVs() {
+                return mount(document.body, {});
+                function mount(element, context) {
+                    return mnt(element), context;
+                    function mnt(el) {
+                        me(el);
+                        for (var i = 0; i < el.children.length; i++) mnt(el.children[i]);
+                    }
+                    function me(e) {
+                        var idAttr = e.attributes['id'];
+                        idAttr && !context[idAttr.value] && (context[idAttr.value] = e);
+                    }
+                }
+            }
+        }());
+    </script>
+    <script src="script.js"></script>
+</body>
+
+</html>
