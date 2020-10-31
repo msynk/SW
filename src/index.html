@@ -12,7 +12,11 @@
     <div id="install" style="display: none;">New version is available. downloading...</div>
     <div id="notification" style="display: none;">New version installed. Click to refresh!</div>
     <div id="progress" style="display: none;"></div>
-    <div id="app">This is the APP!</div>
+    <div id="app">
+        <div>This is the APP!</div>
+        <button onclick="greet()">Click Me</button>
+        <button onclick="sendMessage()">Message</button>
+    </div>
 
 
     <script>
@@ -76,6 +80,8 @@
                 }
 
                 if (type == 'activate') {
+                    var version = data;
+                    localStorage.setItem('version', version);
                 }
             }
             function JSVs() {

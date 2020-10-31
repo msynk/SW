@@ -1,35 +1,50 @@
-var VERSION = '0.43',
+var VERSION = '0.57',
     assets = [
-        'index.html',
-        'style.css',
-        'script.js'
+        '/',
+        '/style.css',
+        '/script.js'
     ];
 
 postMessage({ type: 'start', data: VERSION });
 
+self.addEventListener('install', handleInstall);
+self.addEventListener('activate', handleActivate);
+self.addEventListener('message', handleMessage);
+//self.addEventListener('fetch', handleFetch);
 
-
-
-self.addEventListener('install', install);
-self.addEventListener('activate', activate);
-self.addEventListener('message', messageRecieved);
-
-function install(e) {
+function handleInstall(e) {
     postMessage({ type: 'installing', data: VERSION });
     e.waitUntil(cacheAssets().then(function (e) {
         postMessage({ type: 'installed', data: VERSION });
     }));
 }
 
-function activate(e) {
+function handleActivate(e) {
     postMessage({ type: 'activate', data: VERSION });
 }
 
-function messageRecieved(e) {
+function handleMessage(e) {
     if (e.data == 'skipwaiting') {
         self.skipWaiting();
     }
+    if (e.data && e.data.type === 'INIT_PORT') {
+        var messagePort = e.ports[0];
+        messagePort.onmessage = function (e) {
+            console.log('SW messagePort:', e);
+        }
+        messagePort.postMessage('hello world from SW')
+    }
 }
+
+function handleFetch(e) {
+    console.log('fetch: ', e);
+    var response = caches.match(e.request).then(function (response) {
+        return response || self.fetch(e.request);
+    });
+    e.respondWith(response);
+}
+
+// ==================================================================
 
 function cacheAssets() {
     return caches.open('chache-sw').then(function (c) {
@@ -42,7 +57,7 @@ function cacheAssets() {
                         postMessage({ type: 'progress', data: [a, percent] });
                         resolve();
                     });
-                }, 1000 * (idx + 1));
+                }, 1.000 * (idx + 1));
             });
         });
         return Promise.all(promisses);
